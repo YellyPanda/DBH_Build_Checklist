@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Car Part Selector</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .category { margin-bottom: 20px; }
+        .checkbox-list { margin-left: 20px; }
+        #selected-count { font-weight: bold; }
+        .coffee-link { text-align: center; font-size: 18px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Car Part Selector</h1>
+    <label for="car-select">Choose a car model:</label>
+    <select id="car-select">
+        {% for car in car_parts.keys() %}
+        <option value="{{ car }}" {% if car == selected_car %}selected{% endif %}>{{ car }}</option>
+        {% endfor %}
+    </select>
+
+    <button onclick="clearAll()">Clear All</button>
+    <p id="selected-count">Total Selected: 0</p>
+    <div id="parts-container"></div>
+
+    <p class="coffee-link">
+        <a href="https://www.buymeacoffee.com/yourusername" target="_blank" style="color: #ff9933; text-decoration: none; font-weight: bold;">
+            ☕ Consider buying me a coffee.
+        </a>
+    </p>
+
+    <script>
+        $(document).ready(function () {
+            updateParts();
+        });
+
+        function updateParts() {
+            let carModel = $("#car-select").val();
+            $.getJSON("/get_parts/" + carModel, function (data) {
+                $.getJSON("/get_state/" + carModel, function (savedState) {
+                    let html = "";
+                    let count = 0;
+
+                    for (const [category, parts] of Object.entries(data)) {
+                        html += `<fieldset class="category"><legend>${category}</legend>`;
+                        parts.forEach(part => {
+                            const checked = savedState[part] ? "checked" : "";
+                            if (checked) count++;
+                            html += `<div class="checkbox-list"><input type="checkbox" data-part="${part}" ${checked} onchange="saveState()"> ${part}</div>`;
+                        });
+                        html += "</fieldset>";
+                    }
+
+                    $("#parts-container").html(html);
+                    $("#selected-count").text("Total Selected: " + count);
+                });
+            });
+        }
+
+        function saveState() {
+            let selections = {};
+            $("input[type='checkbox']").each(function () {
+                selections[$(this).data("part")] = $(this).prop("checked");
+            });
+
+            let carModel = $("#car-select").val();
+            $.post("/save_state", JSON.stringify({ car_model: carModel, parts: selections }), function (response) {
+                console.log(response);
+            }, "json");
+        }
+
+        function clearAll() {
+            $("input[type='checkbox']").prop("checked", false).trigger("change");
+        }
+    </script>
+</body>
+</html>
