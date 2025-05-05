@@ -57,5 +57,7 @@ def save_state():
     save_states(data)
     return jsonify({"status": "success"})
 
+# Set port for Render deployment
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Dynamically assign PORT for hosting
+    app.run(host="0.0.0.0", port=port, debug=True)
